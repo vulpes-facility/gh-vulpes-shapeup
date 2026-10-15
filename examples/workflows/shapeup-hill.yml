@@ -27,6 +27,8 @@ jobs:
        github.event.comment.user.type != 'Bot' && contains(github.event.issue.labels.*.name, 'scope'))
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Once the secret is in an environment that admits only the default branch, name it here; see Tokens in the README.
+    # environment: shapeup
     # Every pitch commits to one generated branch, so runs go one at a time across the repository.
     # Only the latest pending run is kept; each run aligns every open pitch, so a cancelled one loses nothing.
     concurrency:

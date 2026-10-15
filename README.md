@@ -42,8 +42,9 @@ Every field, option and label name above is a default and can be renamed in the 
 4. **Config.** Copy [`examples/shapeup.json`](examples/shapeup.json) to `.github/shapeup.json` and set your project.
    Its `$schema` line gives editors a description of every key; see [`config.schema.json`](config.schema.json).
 5. **Token.** The Actions reach the project with a credential of their own; see [Tokens](#tokens).
-   For a user-owned project, add a repository secret `SHAPEUP_PROJECT_TOKEN` with a classic token of the owner that has `project` and `repo`.
+   For a user-owned project, add a secret `SHAPEUP_PROJECT_TOKEN` with a classic token of the owner that has `project` and `repo`.
    For an organization's project, add a variable `SHAPEUP_APP_CLIENT_ID` and a secret `SHAPEUP_APP_PRIVATE_KEY` of a GitHub App.
+   Either secret belongs in an environment that admits only the default branch, where your plan offers one.
 6. **Workflow.** Copy [`examples/workflows/shapeup-hill.yml`](examples/workflows/shapeup-hill.yml) to `.github/workflows/`.
    To change the board from a workflow, start from [`examples/workflows/shapeup-board.yml`](examples/workflows/shapeup-board.yml).
 7. **CLI.** Run `gh extension install vulpes-facility/gh-shapeup`.
@@ -292,7 +293,7 @@ Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edit
 A workflow's own `github.token` cannot reach a GitHub Project, so both Actions take a `project-token` for it.
 Which one depends on who owns the project, as `projectOwnerType` in the config says; the Actions never guess it from the token.
 
-| Project owner | Set in the repository or the organization | `project-token` |
+| Project owner | What to set | `project-token` |
 | --- | --- | --- |
 | A user | Secret `SHAPEUP_PROJECT_TOKEN`: a classic token of the owner | `${{ secrets.SHAPEUP_PROJECT_TOKEN }}` |
 | An organization | Variable `SHAPEUP_APP_CLIENT_ID` and secret `SHAPEUP_APP_PRIVATE_KEY`: a GitHub App's Client ID and private key | `${{ steps.app.outputs.token }}`, minted in the same job |
@@ -303,7 +304,7 @@ Which one depends on who owns the project, as `projectOwnerType` in the config s
 - **An organization's project** takes a token of a GitHub App that the organization installed with access to the repository.
   The App needs the organization permission Projects, read and write for the board Action or read-only for the hill chart Action alone,
   and the repository permission Issues, read-only.
-  Its Client ID is not a secret and goes in a variable; its private key goes in a secret. Set both at the organization's level to share them.
+  Its Client ID is not a secret and goes in a variable, which the organization can share; its private key goes in a secret, kept as the next item says.
   Each job mints a token for an hour with `actions/create-github-app-token`, narrowed to those permissions, so the Actions never see the key:
 
   ```yaml
@@ -321,6 +322,17 @@ Which one depends on who owns the project, as `projectOwnerType` in the config s
   ```
 
   The example workflows do this, so they serve both owners: the App's token when the variable is set, and the secret otherwise.
+- **Keep either secret in an environment that admits only the default branch.**
+  A repository or organization secret reaches a workflow on any branch, so anyone or any app that can push a branch can read it with a workflow of its own;
+  an organization secret reaches every repository it is visible to that way.
+  Create an environment named `shapeup` in each repository that runs the Actions, limit its deployment branches to the default branch,
+  put the secret in it, and uncomment `environment: shapeup` in the example workflows.
+  The issue events that start the hill chart Action run on the default branch, so they pass, and a run from any other branch never receives the secret.
+  Whatever lands on the default branch can then read the secret, so protect that branch with a ruleset that requires pull requests.
+  Give the environment no other job: a job that names an environment, such as a deploy job naming `production`, receives all its secrets.
+  A job that names an environment that does not exist creates it without rules or secrets, so naming it protects nothing until it is set up.
+  GitHub Free offers environments only to public repositories; a private repository on it keeps the secret in the repository.
+  Each run also records a deployment to the environment.
 - The project token also reads the repository's issues, since an issue's project fields are read from the issue.
   `bug new` does not use it.
 - `github-token` needs no setting.
