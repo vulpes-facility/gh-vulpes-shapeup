@@ -42,6 +42,8 @@ jobs:
     needs: station
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Once the secret is in an environment that admits only the default branch, name it here; see Tokens in the README.
+    # environment: shapeup
     # Only this job gets the project token.
     # It shares no concurrency group with shapeup-hill: a pending job is cancelled when another joins its group,
     # and a cancelled board job loses its change.
