@@ -5,7 +5,6 @@
 ```sh
 node --test "test/*.test.mjs"                                          # every unit test (the same as npm test)
 node --test --test-name-pattern="<test name regex>" test/cli.test.mjs  # one test
-node test/render-fixtures.mjs | python3 test/validate-svg.py           # parse the rendered SVGs with a real XML parser
 sh script/build.sh                                                     # one gh extension binary per platform into dist/ (needs Bun; CI pins 1.4.2)
 ```
 
@@ -19,7 +18,7 @@ sh script/build.sh                                                     # one gh 
 
 - There is no install step, no dependency and no linter.
 - `src/` MUST stay free of dependencies and run on plain Node 24 or later.\
-  Both Actions run `src/` straight from the tagged checkout under `node24`,\
+  The board Action runs `src/` straight from the tagged checkout under `node24`,\
   with no bundle and no install;\
   Bun only compiles the CLI into the extension binaries.
 - Files use LF line endings (`.gitattributes`).
@@ -28,8 +27,7 @@ sh script/build.sh                                                     # one gh 
 
 - Every class takes its collaborators as arguments:\
   `Cli` takes `api`, `board`, the template and text readers and `out`;\
-  `GitHub` takes `fetchImpl`;\
-  `HillService` takes a store and a renderer.\
+  `GitHub` takes `fetchImpl`.\
   Tests pass fakes,\
   and the tests of the entry points' `main` stub `globalThis.fetch`,\
   so nothing reaches GitHub.
@@ -37,8 +35,10 @@ sh script/build.sh                                                     # one gh 
 
 ## Keeping files in sync
 
-- `plugins/gh-shapeup/.claude-plugin/plugin.json` MUST carry the version in `package.json` (tested).
-- `plugins/gh-shapeup/skills/shapeup/SKILL.md` MUST name exactly the commands in `usage` in `src/cli.mjs` (tested).
+- `plugins/gh-vulpes-shapeup/.claude-plugin/plugin.json` MUST carry the version in `package.json` (tested).
+- `exports` in `package.json` MUST list exactly the modules in the Exports table of `docs/architecture.md` (tested),\
+  and what those modules export changes only in a major release, since the vulpes-shapeup App imports it.
+- `plugins/gh-vulpes-shapeup/skills/shapeup/SKILL.md` MUST name exactly the commands in `usage` in `src/cli.mjs` (tested).
 - A new or changed CLI command also touches `usage`, `Cli.reads`, `needsReason` or `needsReport` in `src/cli.mjs`, the README and `SKILL.md`.
 - A command the board Action runs is listed in `commands` in `src/board-action.mjs`, in the `command` input of `board/action.yml` and in the README's board table.
 - A config key lives in `defaults` in `src/config.mjs`, in `config.schema.json` and in the README.\

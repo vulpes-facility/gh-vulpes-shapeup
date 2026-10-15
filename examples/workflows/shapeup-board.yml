@@ -45,10 +45,8 @@ jobs:
     # Once the secret is in an environment that admits only the default branch, name it here; see Tokens in the README.
     # environment: shapeup
     # Only this job gets the project token.
-    # It shares no concurrency group with shapeup-hill: a pending job is cancelled when another joins its group,
-    # and a cancelled board job loses its change.
     permissions:
-      contents: write
+      contents: read
       issues: write
     outputs:
       result: ${{ steps.hill.outputs.result }}
@@ -76,7 +74,7 @@ jobs:
       # A user's project takes the classic token of its owner in the secret SHAPEUP_PROJECT_TOKEN instead.
       # The workflow names the command and the issue; only the values come from the station, and only through with.
       - id: hill
-        uses: vulpes-facility/gh-shapeup/board@v1
+        uses: vulpes-facility/gh-vulpes-shapeup/board@v2
         with:
           command: scope hill
           number: ${{ inputs.scope }}
@@ -85,7 +83,7 @@ jobs:
           project-token: ${{ steps.app.outputs.token || secrets.SHAPEUP_PROJECT_TOKEN }}
       # A bug the station found outside its scope goes to the backlog. bug new needs no project token.
       - if: needs.station.outputs.bug-title != ''
-        uses: vulpes-facility/gh-shapeup/board@v1
+        uses: vulpes-facility/gh-vulpes-shapeup/board@v2
         with:
           command: bug new
           title: ${{ needs.station.outputs.bug-title }}

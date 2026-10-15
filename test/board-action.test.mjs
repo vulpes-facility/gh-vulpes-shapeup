@@ -5,7 +5,6 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { annotation, cliArgs, commands, main, markdownReader, readInputs, runBoard } from '../src/board-action.mjs';
-import { ShapeUpError } from '../src/domain.mjs';
 import { config, fixture, reports } from './cli-fixture.mjs';
 
 const s = config.statuses;
@@ -106,54 +105,52 @@ test('inputs become the arguments the CLI would parse, and the Markdown is read 
   for (const name of ['body', 'report', 'title', '../etc/passwd']) await assert.rejects(readText(name), { code: 'input' }, name);
 });
 
-// Runs the Action's command on the CLI fixture, with a hill chart that records what it is asked to align.
+// Runs the Action's command on the CLI fixture.
 function board(values, prepare = () => {}) {
   const f = fixture();
   prepare(f);
   const { inputs } = read(values);
   const log = [];
-  const redraws = [];
-  const hill = { async redraw(number, type) { redraws.push([number, type]); return `drawn #${type === 'pitch' ? number : 10}`; } };
   f.cli.readText = markdownReader(inputs);
   f.cli.out = line => log.push(line);
-  return { f, log, redraws, hill, run: () => runBoard(inputs, { cli: f.cli, hill, log: line => log.push(line) }) };
+  return { f, log, run: () => runBoard(inputs, { cli: f.cli, log: line => log.push(line) }) };
 }
 const comments = f => f.calls.filter(c => c[0] === 'rest' && c[2].endsWith('/comments')).map(c => [c[2], c[3].body]);
 const closeScopes = f => { for (const n of [11, 12]) Object.assign(f.issues.get(n), { state: 'closed', stateReason: 'completed' }); };
 
-test('each command runs through the CLI, posts its Markdown as given, and aligns the chart it changes', async () => {
-  for (const [command, number, redraws, check, prepare] of [
-    ['scope new', 30, [[10, 'pitch']], f => {
+test('each command runs through the CLI and posts its Markdown as given', async () => {
+  for (const [command, number, check, prepare] of [
+    ['scope new', 30, f => {
       const create = f.calls.find(c => c[2] === '/issues');
       assert.equal(create[3].title, 'Scope: Autosave');
       assert.match(create[3].body, /## Done means\n\nSaving a setting writes it at once\./);
       assert.ok(f.calls.some(c => c[2] === '/issues/10/sub_issues'));
       assert.deepEqual(f.calls.filter(c => c[0] === 'hill'), [['hill', 'item-N30', 0]]);
     }],
-    ['scope edit', 11, [], f => {
+    ['scope edit', 11, f => {
       const patch = f.calls.find(c => c[1] === 'PATCH' && c[2] === '/issues/11')[3];
       assert.equal(patch.title, 'Scope: Renamed');
       assert.match(patch.body, /## Done means\n\nMerged\./);
       assert.deepEqual(comments(f), [['/issues/11/comments', 'Clearer.']]);
     }],
-    ['scope start', 11, [], f => {
+    ['scope start', 11, f => {
       assert.deepEqual(f.calls.filter(c => c[0] === 'status'), [['status', 'I11', 'doing'], ['status', 'I10', 'doing']]);
       assert.deepEqual(comments(f), [['/issues/11/comments', 'Started.']]);
     }],
-    ['scope hill', 11, [[11, 'scope']], f => {
+    ['scope hill', 11, f => {
       assert.deepEqual(f.calls.filter(c => c[0] !== 'load').map(c => c.slice(0, 3)), [['hill', 'I11', 45], ['rest', 'POST', '/issues/11/comments']]);
       assert.deepEqual(comments(f), [['/issues/11/comments', valid['scope hill'].reason]]);
     }],
-    ['scope done', 11, [[11, 'scope']], f => {
+    ['scope done', 11, f => {
       assert.equal(f.issues.get(11).state, 'closed');
       assert.equal(f.issues.get(11).item.status, s.done);
       assert.deepEqual(comments(f), [['/issues/11/comments', reports.scope]]);
     }],
-    ['pitch done', 10, [], f => {
+    ['pitch done', 10, f => {
       assert.equal(f.issues.get(10).item.status, s.done);
       assert.deepEqual(comments(f), [['/issues/10/comments', reports.pitch]]);
     }, closeScopes],
-    ['bug new', 30, [], f => {
+    ['bug new', 30, f => {
       const create = f.calls.find(c => c[2] === '/issues');
       assert.equal(create[3].title, 'Bug: It freezes');
       assert.match(create[3].body, /## Steps\n\n1\. Press it/);
@@ -163,28 +160,26 @@ test('each command runs through the CLI, posts its Markdown as given, and aligns
   ]) {
     const b = board(input(command), prepare);
     assert.deepEqual(await b.run(), { result: 'changed', number }, command);
-    assert.deepEqual(b.redraws, redraws, command);
     check(b.f);
   }
 });
 
-test('a result that already holds is a notice: nothing changes, nothing is posted, and the chart is still aligned', async () => {
-  for (const [values, redraws, message, prepare] of [
-    [input('scope start', { number: '12' }), [], '#12 is already In progress. Nothing changed, and the reason was not posted.',
+test('a result that already holds is a notice: nothing changes and nothing is posted', async () => {
+  for (const [values, message, prepare] of [
+    [input('scope start', { number: '12' }), '#12 is already In progress. Nothing changed, and the reason was not posted.',
       f => { f.issues.get(10).item.status = s.doing; }],
-    [input('scope hill', { position: '30' }), [[11, 'scope']], '#11 is already at 30 on the hill. Nothing changed, and the reason was not posted.'],
-    [input('scope done'), [[11, 'scope']], '#11 is already done: closed as completed and Done. Nothing changed, and the report was not posted.',
+    [input('scope hill', { position: '30' }), '#11 is already at 30 on the hill. Nothing changed, and the reason was not posted.'],
+    [input('scope done'), '#11 is already done: closed as completed and Done. Nothing changed, and the report was not posted.',
       f => { Object.assign(f.issues.get(11), { state: 'closed', stateReason: 'completed' }); f.issues.get(11).item.status = s.done; }],
   ]) {
     const b = board(values, prepare);
     assert.deepEqual(await b.run(), { result: 'unchanged', number: values.number === '12' ? 12 : 11 }, values.command);
     assert.deepEqual(b.f.calls.filter(c => c[0] !== 'load'), [], values.command);
-    assert.deepEqual(b.redraws, redraws, values.command);
     assert.ok(b.log.includes(`::notice::${message}`), values.command);
   }
 });
 
-test('any other refusal fails the step before any change, and leaves the chart alone', async () => {
+test('any other refusal fails the step before any change', async () => {
   for (const [values, code, message, prepare] of [
     [input('scope start'), 'input', /^#11 is finished \(Done\) and is not started again\./, f => { f.issues.get(11).item.status = s.done; }],
     [input('scope hill', { number: '10' }), 'type', '#10 is not a scope issue.'],
@@ -197,7 +192,6 @@ test('any other refusal fails the step before any change, and leaves the chart a
     const b = board(values, prepare);
     await assert.rejects(b.run(), { code, message }, values.command);
     assert.deepEqual(b.f.calls.filter(c => c[0] !== 'load'), [], values.command);
-    assert.deepEqual(b.redraws, [], values.command);
   }
 });
 
@@ -205,20 +199,6 @@ test('a command that stops part-way fails with the CLI\'s message, and a new one
   const b = board(input('scope new'));
   b.f.failing.add('POST /issues/10/sub_issues');
   await assert.rejects(b.run(), { code: 'partial', message: /^scope new stopped after 1 of 6 changes\.[\s\S]*Running the command again would create another issue\.$/ });
-  assert.deepEqual(b.redraws, []);
-});
-
-test('a chart that is not drawn is a warning, and the step still succeeds', async () => {
-  for (const [error, why] of [
-    [new ShapeUpError('conflict', 'Updating the generated branch conflicted. Nothing was forced; run it again.'), 'Updating the generated branch conflicted. Nothing was forced; run it again.'],
-    [new Error('fetch failed: project-secret'), 'An internal error occurred.'],
-  ]) {
-    const b = board(input('scope hill'));
-    b.hill.redraw = async () => { throw error; };
-    assert.deepEqual(await b.run(), { result: 'changed', number: 11 });
-    assert.deepEqual(b.log.at(-1), `::warning::The hill chart was not redrawn: ${why} Redraw it by running the hill chart workflow by hand with the pitch number.`);
-    assert.ok(!b.log.join('\n').includes('project-secret'));
-  }
 });
 
 test('the log holds no token and none of the Markdown inputs', async () => {
