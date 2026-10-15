@@ -10,6 +10,9 @@
   The branch is pushed and lands on `main` through a pull request,\
   merged with a merge commit.\
   The pull request SHOULD pass the `test` workflow before it is merged.
+- A ruleset on `main` requires a pull request, allows only merge commits,\
+  and blocks force pushes and deletion, with no bypass;\
+  the organization's ruleset also requires every commit on `main` to be signed.
 - Commits follow Conventional Commits:\
   `feat`, `fix`, `docs`, `test`, `refactor` or `chore`, and `feat!` for a breaking change.
 

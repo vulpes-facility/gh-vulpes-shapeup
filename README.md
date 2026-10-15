@@ -335,6 +335,8 @@ It asks for a reason when you gave none, writes sections and completion reports 
 asks before `pitch break`, `scope drop` and `init --force`, and runs `audit` at the end.
 It comes from the [`vulpes` marketplace](https://github.com/vulpes-facility/claude-plugins), at the CLI's version,
 and the tests check that it names every command the CLI takes and no other.
+For another agent, such as Cursor or Codex, `npx skills add vulpes-facility/gh-vulpes-shapeup` installs the same skill;
+it installs the skill only, and the CLI still comes from `gh extension install`.
 
 ## Development
 
