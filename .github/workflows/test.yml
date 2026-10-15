@@ -20,5 +20,3 @@ jobs:
           node-version: 24
       - name: Unit tests
         run: node --test "test/*.test.mjs"
-      - name: SVG check with a real XML parser
-        run: node test/render-fixtures.mjs | python3 test/validate-svg.py

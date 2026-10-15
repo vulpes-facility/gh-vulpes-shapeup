@@ -10,7 +10,7 @@ import { GitHub } from './github.mjs';
 import { Init } from './init.mjs';
 import { checkReport, composeBody, editBody, footnoteValues, loadReport, loadTemplate, sectionValues, titleFor } from './templates.mjs';
 
-export const usage = `Usage: gh shapeup <kind> <command> [number] [--parameter value ...]
+export const usage = `Usage: gh vulpes-shapeup <kind> <command> [number] [--parameter value ...]
 
   pitch new --title T --appetite <key> --problem … --solution … --rabbit-holes … --no-gos …
   pitch edit <number> [--title T] [section parameters] [--appetite <key>] --reason …
@@ -190,7 +190,7 @@ export class Cli {
   // A finished scope is never reopened: the work that follows it is a new scope.
   newScopeHint(scope) {
     const sections = this.spec('scope').required.map(param => ` --${param} …`).join('');
-    return `Work that follows a finished scope is a new scope: gh shapeup scope new --pitch ${scope.parent ?? '<number>'} --title …${sections}.`;
+    return `Work that follows a finished scope is a new scope: gh vulpes-shapeup scope new --pitch ${scope.parent ?? '<number>'} --title …${sections}.`;
   }
   // A scope is worked on only while its pitch is bet: Bet or In progress, and not finished.
   async workingPitch(scope, verb) {
@@ -266,7 +266,7 @@ export class Cli {
     }
     return checkReport(template, await this.readMarkdown(file, 'report'));
   }
-  // The comment follows the change, so a failed change leaves none. On a scope it also wakes the hill chart Action.
+  // The comment follows the change, so a failed change leaves none. On a scope it also wakes the vulpes-shapeup App.
   async explain(number, note) {
     try { await this.api.rest(`/issues/${number}/comments`, { method: 'POST', body: { body: note.text } }); } catch (error) {
       throw new ShapeUpError('comment', `#${number} was changed, but its ${note.what} comment failed: ${error.message} Post the ${note.what} on #${number} by hand.`);
@@ -444,7 +444,7 @@ export class Cli {
       await this.workingPitch(scope, 'move on the hill');
       if ((scope.item.hill ?? 0) === position) throw holds(`#${scope.number} is already at ${position} on the hill.`);
       await this.apply(`scope hill #${scope.number}`, [step(set(scope.number, c.hillField, position), () => this.board.setHill(scope.item.id, position))], { note });
-      // The reason comment is also the hill chart Action's trigger, so it must follow the field change.
+      // The reason comment also wakes the vulpes-shapeup App, so it must follow the field change.
       return changed(scope.number, `#${scope.number} hill ${scope.item.hill ?? 0} → ${position}`);
     }
     if (kind === 'scope' && action === 'done') {

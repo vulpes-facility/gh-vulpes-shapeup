@@ -33,12 +33,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - { runner: ubuntu-latest, file: gh-shapeup-linux-amd64 }
-          - { runner: ubuntu-24.04-arm, file: gh-shapeup-linux-arm64 }
-          - { runner: macos-15-intel, file: gh-shapeup-darwin-amd64 }
-          - { runner: macos-latest, file: gh-shapeup-darwin-arm64 }
-          - { runner: windows-latest, file: gh-shapeup-windows-amd64.exe }
-          - { runner: windows-11-arm, file: gh-shapeup-windows-arm64.exe }
+          - { runner: ubuntu-latest, file: gh-vulpes-shapeup-linux-amd64 }
+          - { runner: ubuntu-24.04-arm, file: gh-vulpes-shapeup-linux-arm64 }
+          - { runner: macos-15-intel, file: gh-vulpes-shapeup-darwin-amd64 }
+          - { runner: macos-latest, file: gh-vulpes-shapeup-darwin-arm64 }
+          - { runner: windows-latest, file: gh-vulpes-shapeup-windows-amd64.exe }
+          - { runner: windows-11-arm, file: gh-vulpes-shapeup-windows-arm64.exe }
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -50,7 +50,7 @@ jobs:
           FILE: ${{ matrix.file }}
         run: |
           chmod +x "$FILE"
-          ./"$FILE" help | grep -q '^Usage: gh shapeup '
+          ./"$FILE" help | grep -q '^Usage: gh vulpes-shapeup '
           status=0
           ./"$FILE" audit 2> error.txt || status=$?
           test "$status" = 2

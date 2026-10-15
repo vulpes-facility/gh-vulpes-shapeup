@@ -1,16 +1,17 @@
-# gh-shapeup
+# gh-vulpes-shapeup
 
 Run [Shape Up](https://basecamp.com/shapeup) on GitHub Issues and Projects.
 
 - A **CLI** that creates and edits pitches, scopes, cooldowns and bugs from your issue templates,
   bets pitches on cycles, moves scopes on the hill, comments on every issue it changes with the reason or a completion report,
   and audits the board for drift.
-  It installs as the gh extension `gh shapeup`.
-- A **hill chart Action** that draws each pitch's hill chart as an SVG and keeps it at the top of the pitch body.
+  It installs as the gh extension `gh vulpes-shapeup`.
 - A **board Action** that runs the cycle's commands from a workflow, such as after an agent's work, with the CLI's checks and refusals.
 - A **Claude Code plugin** that runs the CLI for you when you ask Claude.
 
-The CLI and both Actions read one config file that names your project, its fields and your templates.
+Each pitch's hill chart is drawn by [vulpes-shapeup](https://github.com/vulpes-facility/vulpes-shapeup), a GitHub App server that follows the board;
+this repository holds what people and agents use to change it.
+The CLI, the board Action and the App read one config file that names your project, its fields and your templates.
 The config holds names only: issues, statuses, cycles and hill positions are always read live from GitHub.
 
 ## How Shape Up maps onto GitHub
@@ -23,57 +24,58 @@ The config holds names only: issues, statuses, cycles and hill positions are alw
 | Appetite | A single-select **Appetite** field on the pitch |
 | Cycle | An iteration field **Cycle** |
 | Hill position | A Number field **Hill Position** (0–100) on each scope; empty counts as 0 |
-| Circuit breaker | `gh shapeup pitch break`: closes the pitch and its open scopes as not planned |
-| Scope hammering | `gh shapeup scope drop`: closes a scope the pitch can ship without as not planned |
+| Circuit breaker | `gh vulpes-shapeup pitch break`: closes the pitch and its open scopes as not planned |
+| Scope hammering | `gh vulpes-shapeup scope drop`: closes a scope the pitch can ship without as not planned |
 | Cooldown work, bugs | Issues with the `cooldown` and `bug` labels, created from their templates |
 
 Every field, option and label name above is a default and can be renamed in the config.
 
 ## Setup
 
-1. **Project and labels.** Once the config and the CLI are in place (steps 4 and 7), `gh shapeup init` creates the four labels, a project linked to the repository and the four fields above, all named as the config says.
+1. **Project and labels.** Once the config and the CLI are in place (steps 4 and 7), `gh vulpes-shapeup init` creates the four labels, a project linked to the repository and the four fields above, all named as the config says.
    Or create them by hand on a user or organization project.
 2. **Project workflows.** In the project's Workflows, turn on *Auto-add to project* for the repository and *Auto-add sub-issues to project*.
    The API cannot turn them on, so `init` only reminds you.
 3. **Issue templates.** Copy [`examples/ISSUE_TEMPLATE/`](examples/ISSUE_TEMPLATE) to `.github/ISSUE_TEMPLATE/`.
    A template needs front matter with `title` (the prefix, such as `"Pitch: "`) and `labels`,
    one `## ` section per CLI parameter of its kind, and the footnote markers.
-   The pitch template also carries the hill markers the hill chart Action writes between.
+   The pitch template also carries the hill markers the vulpes-shapeup App writes between.
 4. **Config.** Copy [`examples/shapeup.json`](examples/shapeup.json) to `.github/shapeup.json` and set your project.
    Its `$schema` line gives editors a description of every key; see [`config.schema.json`](config.schema.json).
-5. **Token.** The Actions reach the project with a credential of their own; see [Tokens](#tokens).
+5. **Token** (for the board Action). The board Action reaches the project with a credential of its own; see [Tokens](#tokens).
    For a user-owned project, add a secret `SHAPEUP_PROJECT_TOKEN` with a classic token of the owner that has `project` and `repo`.
    For an organization's project, add a variable `SHAPEUP_APP_CLIENT_ID` and a secret `SHAPEUP_APP_PRIVATE_KEY` of a GitHub App.
    Either secret belongs in an environment that admits only the default branch, where your plan offers one.
-6. **Workflow.** Copy [`examples/workflows/shapeup-hill.yml`](examples/workflows/shapeup-hill.yml) to `.github/workflows/`.
+6. **Hill charts.** Install your organization's [vulpes-shapeup](https://github.com/vulpes-facility/vulpes-shapeup) App on the repository; its README sets up the server and the App.
    To change the board from a workflow, start from [`examples/workflows/shapeup-board.yml`](examples/workflows/shapeup-board.yml).
-7. **CLI.** Run `gh extension install vulpes-facility/gh-shapeup`.
+7. **CLI.** Run `gh extension install vulpes-facility/gh-vulpes-shapeup`.
    It is one binary for macOS, Linux or Windows that needs nothing but `gh`, and it uses your `gh` login.
-   `gh extension upgrade shapeup` updates it.
+   `gh extension upgrade vulpes-shapeup` updates it.
+   An install from before the rename, run as `gh shapeup`, moves with `gh extension remove shapeup` and the install above.
 8. **Claude Code plugin** (optional). Run `claude plugin marketplace add vulpes-facility/claude-plugins`
-   and `claude plugin install gh-shapeup@vulpes`; see [Claude Code plugin](#claude-code-plugin).
+   and `claude plugin install gh-vulpes-shapeup@vulpes`; see [Claude Code plugin](#claude-code-plugin).
 
 ## CLI
 
 ```
-gh shapeup pitch new --title T --appetite <key> --problem … --solution … --rabbit-holes … --no-gos …
-gh shapeup pitch edit <number> [--title T] [section parameters] [--appetite <key>] --reason …
-gh shapeup pitch bet <number> --cycle "<cycle title>" --reason …
-gh shapeup pitch unbet <number> --reason …
-gh shapeup pitch break <number> --reason …
-gh shapeup pitch done <number> --report-file <file>
-gh shapeup scope new --pitch <number> --title T --done …
-gh shapeup scope edit <number> [--title T] [--done …] --reason …
-gh shapeup scope start <number> --reason …
-gh shapeup scope hill <number> --position 0-100 --reason …
-gh shapeup scope done <number> --report-file <file>
-gh shapeup scope drop <number> --reason …
-gh shapeup cooldown new --title T --what … [--why …] --done …
-gh shapeup cooldown edit <number> [--title T] [section parameters] --reason …
-gh shapeup bug new --title T --symptom … --steps … --expected … [--environment …]
-gh shapeup bug edit <number> [--title T] [section parameters] --reason …
-gh shapeup audit [--pitch <number>]
-gh shapeup init [--force]
+gh vulpes-shapeup pitch new --title T --appetite <key> --problem … --solution … --rabbit-holes … --no-gos …
+gh vulpes-shapeup pitch edit <number> [--title T] [section parameters] [--appetite <key>] --reason …
+gh vulpes-shapeup pitch bet <number> --cycle "<cycle title>" --reason …
+gh vulpes-shapeup pitch unbet <number> --reason …
+gh vulpes-shapeup pitch break <number> --reason …
+gh vulpes-shapeup pitch done <number> --report-file <file>
+gh vulpes-shapeup scope new --pitch <number> --title T --done …
+gh vulpes-shapeup scope edit <number> [--title T] [--done …] --reason …
+gh vulpes-shapeup scope start <number> --reason …
+gh vulpes-shapeup scope hill <number> --position 0-100 --reason …
+gh vulpes-shapeup scope done <number> --report-file <file>
+gh vulpes-shapeup scope drop <number> --reason …
+gh vulpes-shapeup cooldown new --title T --what … [--why …] --done …
+gh vulpes-shapeup cooldown edit <number> [--title T] [section parameters] --reason …
+gh vulpes-shapeup bug new --title T --symptom … --steps … --expected … [--environment …]
+gh vulpes-shapeup bug edit <number> [--title T] [section parameters] --reason …
+gh vulpes-shapeup audit [--pitch <number>]
+gh vulpes-shapeup init [--force]
 ```
 
 - Section parameters are set per kind in the config's `kinds`; the ones above are the defaults.
@@ -91,7 +93,7 @@ gh shapeup init [--force]
   Every check that can refuse the command comes before its first change.
   A failed change posts nothing; a comment that fails after the change is reported, and the command exits with 2.
 - A command whose result already holds refuses, and one that stops part-way says what it made; see [State commands](#state-commands).
-- A comment on a scope wakes the hill chart Action, so the comment of every `scope` command wakes it; after `scope hill` that is what redraws the chart.
+- The vulpes-shapeup App redraws a pitch's chart when a scope's Hill Position changes, when a scope opens, closes or reopens, and when a person comments on a scope.
 - `init` creates the labels, the project and its fields that the config names, and leaves whatever already exists alone with a warning.
   With `--force` it brings them back to the config: labels get their color and description, options are set to the config's (an option with the same name keeps its id, so items keep their values), and a field of the wrong type is deleted with its values and created again.
   A project that `init` creates gets a new number; set it in the config.
@@ -195,7 +197,7 @@ A repository changes the template in either of two ways:
 
 ## Hill chart
 
-The Action keeps this block at the top of each pitch body:
+The [vulpes-shapeup](https://github.com/vulpes-facility/vulpes-shapeup) App keeps this block at the top of each pitch body:
 
 ```
 <!-- hill:start -->
@@ -204,27 +206,17 @@ The Action keeps this block at the top of each pitch body:
 <!-- hill:end -->
 ```
 
-- The second line records the values last drawn; the Action redraws a pitch only when its scopes or their positions no longer match it.
-- A person's comment on a scope, and a scope opening, closing or reopening, wake the Action.
-  Each run aligns the scope's pitch and every open pitch that has scopes, so a run cancelled in the queue loses nothing.
-- Scopes closed as not planned leave the chart. Scopes at the same position share one badge, as in `1, 4, 7–9`.
+- The second line records the values last drawn; the App redraws a pitch only when its scopes or their positions no longer match it,
+  and `audit` reports a chart that no longer matches the board.
+- Scopes closed as not planned leave the chart.
+- A user-owned project gets no chart, since a GitHub App cannot reach a project that a user owns.
 - The SVG is committed to an orphan branch (default `generated/shapeup`, which must start with `generated/`).
-  The branch holds only a README and the charts; the Action refuses any other branch and never force-pushes.
 - The link is absolute because the Projects side panel resolves relative links against the project page.
   Viewers of a private repository need to be signed in.
-- `workflow_dispatch` with an empty `pitch_number` redraws every open pitch that has scopes; with a number it redraws that pitch.
-
-## Hill chart Action inputs
-
-| Input | Default | Use |
-| --- | --- | --- |
-| `project-token` | none | Reads the project; see [Tokens](#tokens). Without it the Action only warns. |
-| `github-token` | `${{ github.token }}` | Commits the SVG and updates pitch bodies (`contents: write`, `issues: write`). |
-| `config` | `.github/shapeup.json` | Path of the config in the checked-out repository. |
 
 ## Board Action
 
-`vulpes-facility/gh-shapeup/board@v1` runs one command of the cycle from a workflow, with the same checks and refusals as the CLI.
+`vulpes-facility/gh-vulpes-shapeup/board@v2` runs one command of the cycle from a workflow, with the same checks and refusals as the CLI.
 It is meant for a job that runs after automated work, such as an agent's:
 that work never sees the project token, and hands over only values that the workflow passes in as inputs.
 See [`examples/workflows/shapeup-board.yml`](examples/workflows/shapeup-board.yml).
@@ -253,9 +245,6 @@ Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edit
   Every other refusal fails the step before the first change.
 - A command that stops part-way fails with the CLI's message.
   Running a state command again finishes it; running `scope new` or `bug new` again would create another issue.
-- After `scope new`, `scope hill` and `scope done`, the step aligns the chart of the scope's pitch, even when the result already held,
-  since a bot's comment does not wake the hill chart workflow.
-  When the chart cannot be drawn, the step warns and still succeeds; run the hill chart workflow by hand with the pitch number.
 - The step logs no token, no API response and none of the Markdown inputs.
 
 ### Workflow
@@ -264,8 +253,6 @@ Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edit
   Never put `${{ }}` inside a `run:` script.
 - Check out the config and the templates from the default branch, never from a branch the work wrote.
 - End a multi-line output with a delimiter the work cannot guess, so its text cannot set another output.
-- Keep the board job out of the hill chart workflow's concurrency group: a pending job is cancelled when another joins its group,
-  and a cancelled board job loses its change.
 
 ### Board Action inputs and outputs
 
@@ -280,7 +267,7 @@ Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edit
 | `reason` | none | The reason, as with `--reason-file`. |
 | `report` | none | The completion report, as with `--report-file`. |
 | `project-token` | none | Changes the project; see [Tokens](#tokens). |
-| `github-token` | `${{ github.token }}` | Creates, closes and comments on issues, commits the chart and updates pitch bodies (`issues: write`, `contents: write`). |
+| `github-token` | `${{ github.token }}` | Creates, closes and comments on issues (`issues: write`). |
 | `config` | `.github/shapeup.json` | Path of the config in the checked-out repository. |
 
 | Output | Value |
@@ -290,8 +277,8 @@ Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edit
 
 ## Tokens
 
-A workflow's own `github.token` cannot reach a GitHub Project, so both Actions take a `project-token` for it.
-Which one depends on who owns the project, as `projectOwnerType` in the config says; the Actions never guess it from the token.
+A workflow's own `github.token` cannot reach a GitHub Project, so the board Action takes a `project-token` for it.
+Which one depends on who owns the project, as `projectOwnerType` in the config says; the Action never guesses it from the token.
 
 | Project owner | What to set | `project-token` |
 | --- | --- | --- |
@@ -299,13 +286,12 @@ Which one depends on who owns the project, as `projectOwnerType` in the config s
 | An organization | Variable `SHAPEUP_APP_CLIENT_ID` and secret `SHAPEUP_APP_PRIVATE_KEY`: a GitHub App's Client ID and private key | `${{ steps.app.outputs.token }}`, minted in the same job |
 
 - **A user's project** takes a classic token of its owner, since a GitHub App cannot reach a project that a user owns.
-  It needs `project` for the board Action, which changes the project; `read:project` is enough for the hill chart Action alone. `repo` reads the repository's issues.
+  It needs `project`, since the board Action changes the project, and `repo`, which reads the repository's issues.
   The token acts as its owner and expires when its owner set it to; replace the secret before then.
 - **An organization's project** takes a token of a GitHub App that the organization installed with access to the repository.
-  The App needs the organization permission Projects, read and write for the board Action or read-only for the hill chart Action alone,
-  and the repository permission Issues, read-only.
+  The App needs the organization permission Projects, read and write, and the repository permission Issues, read-only.
   Its Client ID is not a secret and goes in a variable, which the organization can share; its private key goes in a secret, kept as the next item says.
-  Each job mints a token for an hour with `actions/create-github-app-token`, narrowed to those permissions, so the Actions never see the key:
+  Each job mints a token for an hour with `actions/create-github-app-token`, narrowed to those permissions, so the Action never sees the key:
 
   ```yaml
   - id: app
@@ -316,18 +302,18 @@ Which one depends on who owns the project, as `projectOwnerType` in the config s
       private-key: ${{ secrets.SHAPEUP_APP_PRIVATE_KEY }}
       permission-organization-projects: write
       permission-issues: read
-  - uses: vulpes-facility/gh-shapeup/board@v1
+  - uses: vulpes-facility/gh-vulpes-shapeup/board@v2
     with:
       project-token: ${{ steps.app.outputs.token || secrets.SHAPEUP_PROJECT_TOKEN }}
   ```
 
-  The example workflows do this, so they serve both owners: the App's token when the variable is set, and the secret otherwise.
+  The example workflow does this, so it serves both owners: the App's token when the variable is set, and the secret otherwise.
 - **Keep either secret in an environment that admits only the default branch.**
   A repository or organization secret reaches a workflow on any branch, so anyone or any app that can push a branch can read it with a workflow of its own;
   an organization secret reaches every repository it is visible to that way.
-  Create an environment named `shapeup` in each repository that runs the Actions, limit its deployment branches to the default branch,
-  put the secret in it, and uncomment `environment: shapeup` in the example workflows.
-  The issue events that start the hill chart Action run on the default branch, so they pass, and a run from any other branch never receives the secret.
+  Create an environment named `shapeup` in each repository that runs the board Action, limit its deployment branches to the default branch,
+  put the secret in it, and uncomment `environment: shapeup` in the example workflow.
+  Run the workflow on the default branch: a run from any other branch never receives the secret.
   Whatever lands on the default branch can then read the secret, so protect that branch with a ruleset that requires pull requests.
   Give the environment no other job: a job that names an environment, such as a deploy job naming `production`, receives all its secrets.
   A job that names an environment that does not exist creates it without rules or secrets, so naming it protects nothing until it is set up.
@@ -336,16 +322,15 @@ Which one depends on who owns the project, as `projectOwnerType` in the config s
 - The project token also reads the repository's issues, since an issue's project fields are read from the issue.
   `bug new` does not use it.
 - `github-token` needs no setting.
-  The workflow's own `github.token`, with `contents: write` and `issues: write`, commits the chart and updates pitch bodies,
-  and for the board Action creates, closes and comments on issues, as `github-actions[bot]`.
-  To comment as your App, pass the App's token instead, minted with Issues and Contents write as well.
+  The workflow's own `github.token`, with `issues: write`, creates, closes and comments on issues, as `github-actions[bot]`.
+  To comment as your App, pass the App's token instead, minted with Issues write as well.
 - When automated work runs as the same App, give its job a token without Projects, with the `permission-*` inputs of `actions/create-github-app-token`:
   an installation token otherwise carries every permission of the App.
 
 ## Claude Code plugin
 
-The plugin in [`plugins/gh-shapeup`](plugins/gh-shapeup) gives Claude Code a skill that turns a request,
-such as "bet #10 on Cycle 2" or "scope #11 is over the hill", into the `gh shapeup` command that makes it.
+The plugin in [`plugins/gh-vulpes-shapeup`](plugins/gh-vulpes-shapeup) gives Claude Code a skill that turns a request,
+such as "bet #10 on Cycle 2" or "scope #11 is over the hill", into the `gh vulpes-shapeup` command that makes it.
 It asks for a reason when you gave none, writes sections and completion reports to files that follow your templates,
 asks before `pitch break`, `scope drop` and `init --force`, and runs `audit` at the end.
 It comes from the [`vulpes` marketplace](https://github.com/vulpes-facility/claude-plugins), at the CLI's version,
@@ -355,7 +340,6 @@ and the tests check that it names every command the CLI takes and no other.
 
 ```
 node --test "test/*.test.mjs"
-node test/render-fixtures.mjs | python3 test/validate-svg.py
 sh script/build.sh
 ```
 

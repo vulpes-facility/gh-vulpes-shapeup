@@ -4,18 +4,15 @@ import { Cli, reportTemplateReader, templateReader } from './cli.mjs';
 import { loadConfig } from './config.mjs';
 import { ShapeUpError, parsePosition } from './domain.mjs';
 import { GitHub } from './github.mjs';
-import { HillService } from './service.mjs';
-import { GeneratedStore } from './store.mjs';
 
-// The commands a cycle runs from a workflow: the inputs each needs, the ones it also takes (at least one of them),
-// and the chart it aligns, named by the pitch input or by the scope in number.
+// The commands a cycle runs from a workflow: the inputs each needs and the ones it also takes (at least one of them).
 // Shaping, betting, the circuit breaker, dropping a scope, cooldown work, bug edits and init stay with people on the CLI.
 export const commands = {
-  'scope new': { needs: ['pitch', 'title', 'body'], chart: 'pitch' },
+  'scope new': { needs: ['pitch', 'title', 'body'] },
   'scope edit': { needs: ['number', 'reason'], takes: ['title', 'body'] },
   'scope start': { needs: ['number', 'reason'] },
-  'scope hill': { needs: ['number', 'position', 'reason'], chart: 'scope' },
-  'scope done': { needs: ['number', 'report'], chart: 'scope' },
+  'scope hill': { needs: ['number', 'position', 'reason'] },
+  'scope done': { needs: ['number', 'report'] },
   'pitch done': { needs: ['number', 'report'] },
   'bug new': { needs: ['title', 'body'], project: false },
 };
@@ -88,11 +85,10 @@ export const markdownReader = inputs => async name => {
 export const annotation = (level, message) =>
   `::${level}::${String(message).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`;
 
-// Runs the command with the Cli, then aligns the chart of the pitch it changed, and returns the step's outputs.
+// Runs the command with the Cli and returns the step's outputs.
 // A result that already holds changes nothing and posts nothing, and it is a notice, not a failure,
 // so a workflow that returns to a station can run the same step again.
-export async function runBoard(inputs, { cli, hill, log = console.log }) {
-  const spec = commands[inputs.command];
+export async function runBoard(inputs, { cli, log = console.log }) {
   const outputs = { result: 'changed', number: inputs.number };
   try {
     // Every message the Cli returns starts with the issue it names; after new, that is the issue it created.
@@ -102,15 +98,6 @@ export async function runBoard(inputs, { cli, hill, log = console.log }) {
     if (!(error instanceof ShapeUpError && error.code === 'holds')) throw error;
     log(annotation('notice', `${error.message} Nothing changed, and the ${inputs.report === undefined ? 'reason' : 'report'} was not posted.`));
     outputs.result = 'unchanged';
-  }
-  if (spec.chart) {
-    try {
-      log(`Hill chart: ${await hill.redraw(spec.chart === 'pitch' ? inputs.pitch : inputs.number, spec.chart)}`);
-    } catch (error) {
-      // The change is made and posted by now, and running a new command again would make another issue.
-      const why = error instanceof ShapeUpError ? error.message : 'An internal error occurred.';
-      log(annotation('warning', `The hill chart was not redrawn: ${why} Redraw it by running the hill chart workflow by hand with the pitch number.`));
-    }
   }
   return outputs;
 }
@@ -125,8 +112,7 @@ export async function main(env = process.env, log = console.log) {
   const root = process.cwd();
   const cli = new Cli({ api, board: new Board(api, config), config, readTemplate: templateReader(root, config),
     readReportTemplate: reportTemplateReader(root), readText: markdownReader(inputs), out: log });
-  const hill = new HillService(api, new GeneratedStore(api, config.generatedBranch), config);
-  const outputs = await runBoard(inputs, { cli, hill, log });
+  const outputs = await runBoard(inputs, { cli, log });
   const lines = Object.entries(outputs).filter(([, value]) => value !== undefined).map(([name, value]) => `${name}=${value}\n`);
   if (env.GITHUB_OUTPUT) await appendFile(env.GITHUB_OUTPUT, lines.join(''));
 }

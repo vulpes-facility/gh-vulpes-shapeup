@@ -1,5 +1,5 @@
-name: gh-shapeup board
-description: Runs one command of the cycle on the board with the CLI's checks and refusals, and redraws the hill chart it changes.
+name: gh-vulpes-shapeup board
+description: Runs one command of the cycle on the board with the CLI's checks and refusals.
 author: vulpes33
 inputs:
   command:
@@ -38,7 +38,7 @@ inputs:
     required: false
     default: ''
   github-token:
-    description: Creates, closes and comments on issues, commits the hill chart and updates pitch bodies (issues:write, contents:write). Comments are posted as its owner.
+    description: Creates, closes and comments on issues (issues:write). Comments are posted as its owner.
     required: false
     default: ${{ github.token }}
   config:

@@ -353,7 +353,7 @@ test('every command refuses an option it does not read, before any call', async 
 const scopeReport = f => { f.files.set('report.md', reports.scope); return ['--report-file', 'report.md']; };
 const pitchReport = f => { f.files.set('report.md', reports.pitch); return ['--report-file', 'report.md']; };
 const closeScopes = f => { for (const n of [11, 12]) Object.assign(f.issues.get(n), { state: 'closed', stateReason: 'completed' }); };
-const hint = 'Work that follows a finished scope is a new scope: gh shapeup scope new --pitch 10 --title … --done ….';
+const hint = 'Work that follows a finished scope is a new scope: gh vulpes-shapeup scope new --pitch 10 --title … --done ….';
 test('a state command whose result already holds, or that would reopen a finished scope, refuses before any change and without a comment', async () => {
   const closed = (n, reason, status) => f => Object.assign(f.issues.get(n), { state: 'closed', stateReason: reason }, status ? { item: { ...f.issues.get(n).item, status } } : {});
   const status = (n, value, more = {}) => f => Object.assign(f.issues.get(n).item, { status: value, ...more });

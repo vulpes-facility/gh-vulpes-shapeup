@@ -1,16 +1,20 @@
 {
-  "name": "gh-shapeup",
+  "name": "gh-vulpes-shapeup",
   "version": "1.5.0",
-  "description": "Run Shape Up on GitHub Issues and Projects: a CLI for pitches, scopes, cooldowns and bugs, an Action that draws each pitch's hill chart, and an Action that runs the cycle's commands on the board.",
+  "description": "Run Shape Up on GitHub Issues and Projects: a CLI for pitches, scopes, cooldowns and bugs, and an Action that runs the cycle's commands on the board.",
   "license": "MIT",
   "type": "module",
   "bin": {
     "shapeup": "bin/shapeup.mjs"
   },
+  "exports": {
+    "./config": "./src/config.mjs",
+    "./domain": "./src/domain.mjs",
+    "./github": "./src/github.mjs"
+  },
   "files": [
     "bin/",
     "src/",
-    "action.yml",
     "board/",
     "config.schema.json"
   ],
@@ -22,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vulpes-facility/gh-shapeup.git"
+    "url": "https://github.com/vulpes-facility/gh-vulpes-shapeup.git"
   },
   "keywords": ["shape-up", "hill-chart", "github-projects", "github-actions"]
 }

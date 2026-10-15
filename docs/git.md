@@ -17,10 +17,11 @@
 
 - A release goes through the same flow.\
   A `chore/release-X.Y.Z` branch holds a `chore: release X.Y.Z` commit\
-  that bumps `package.json` and `plugins/gh-shapeup/.claude-plugin/plugin.json`.\
+  that bumps `package.json` and `plugins/gh-vulpes-shapeup/.claude-plugin/plugin.json`.\
   Once it is merged, the `vX.Y.Z` tag is pushed on the merge commit on `main`.
 - The tag runs `.github/workflows/release.yml`,\
   which builds every binary, runs each on its own platform and publishes them.
-- The `v1` tag points at the latest release.\
-  `@v1` in the Action references and the `$schema` URL in configs resolve through it,\
-  and the release workflow does not move it.
+- The `v2` tag points at the latest release.\
+  `@v2` in the board Action references and the `$schema` URL in configs resolve through it,\
+  and the release workflow does not move it.\
+  The `v1` tag stays on the last 1.x release, the last one with the hill chart Action.
