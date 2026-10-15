@@ -1,6 +1,6 @@
 {
   "name": "gh-vulpes-shapeup",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Run Shape Up on GitHub Issues and Projects by asking Claude: pitches and bets, scopes on the hill, cooldown work and bugs, completion reports and audits, through the gh vulpes-shapeup CLI.",
   "author": { "name": "vulpes33" },
   "homepage": "https://github.com/vulpes-facility/gh-vulpes-shapeup",
